@@ -1,0 +1,80 @@
+Machine Learning Assignment
+==========================================
+Created by Sambit Datta 
+March 14, 2016
+Synopsis
+--------
+Given 2 files, we are asked to develop a machine learning paradigm to predict the type of exercise performed based an a variety of measurements. The first file is the training file, used to develop our algorithm, and the second is used to make our final predictions.
+
+The training data is
+[1]:https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv 
+The testing data is: 
+[2]:https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
+
+Once downloaded to our working directory, we read in the file to perform some basic exploratory data analysis.  I continue to examine and remove columns which contain NA's, as well as remove columns which I do not believe have any outcome on the class.
+
+In order to remove the na : 
+```{r}
+a=read.csv('pml-training.csv',na.strings=c('','NA'))
+b=a[,!apply(a,2,function(x) any(is.na(x)) )]
+c=b[,-c(1:7)]
+```
+This leave us with 19622 observations and 53 predictors (one of which is the response variable)
+
+To continue with the analysis we download the necessary packages
+```{r}
+library('randomForest')
+library('caret')
+library('e1071')
+```
+For cross validation, We split our testing data into sub groups, 60:40
+```{r}
+subGrps=createDataPartition(y=c$classe, p=0.6, list=FALSE)
+subTraining=c[subGrps,]
+subTesting=c[-subGrps, ]
+dim(subTraining);dim(subTesting)
+```
+We see there are 11776 in the subTraining group, and 7846 in the subTesting group.
+
+I then continue to make a predictive model based on the random forest paradigm, as it is one of the best performing, using the subTraining group. Once the model is made, we predict the outcome of the other group, subTesting, and examine the confusion matrix to see how well the predictive model performed
+```{r}
+model=randomForest(classe~., data=subTraining, method='class')
+pred=predict(model,subTesting, type='class')
+z=confusionMatrix(pred,subTesting$classe)
+save(z,file='test.RData')
+```
+
+```{r}
+setwd('C:/Users/user/Documents/Coursera')
+load('test.RData')
+z$table
+```
+
+```{r}
+z$overall[1]
+```
+The accuracy is 99.31%. The out of sample error, that is the error rate on a new (subTesting) data set, here is going to be 0.69%, with a 95% confidence interval of 0.52% to .9%.
+```{r}
+z$overall[1]
+```
+####Final Data Set Analysis and Predictions
+
+This is very good, so I continue with the final testing data set. I read it in and preporcess it the same way as the training set previously.
+
+```{r}
+d=read.csv('pml-testing.csv',na.strings=c('','NA'))
+e=d[,!apply(d,2,function(x) any(is.na(x)) )]
+f=e[,-c(1:7)]
+```
+Once the dataset it processed, I continue to analyse it using the model developed above
+
+```{r}
+predicted=predict(model,f,type='class')
+save(predicted,file='predicted.RData')
+```
+The final prediction for the 20 ends up as:
+```{r}
+setwd('C:/Users/user/Documents/Coursera')
+load('predicted.RData')
+p
+```
